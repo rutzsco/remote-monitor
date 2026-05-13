@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>f9193313-cdd7-4d8c-9396-71d19dc960f1</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Azure.SignalR" Version="1.21.4" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.31.2" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Client\RemoteMonitor.UI.Blazor.Client.csproj" />
+    <ProjectReference Include="..\Shared\RemoteMonitor.UI.Blazor.Shared.csproj" />
+    <ProjectReference Include="..\..\..\RemoteMonitor.Services.Ingestion\RemoteMonitor.Services.Ingestion.Shared\RemoteMonitor.Services.Ingestion.Shared.csproj" />
+    <ProjectReference Include="..\..\..\RemoteMonitor.Services.Measurements\RemoteMonitor.Services.Measurements.Shared\RemoteMonitor.Services.Measurements.Shared.csproj" />
+    <ProjectReference Include="..\..\..\RemoteMonitor.Services.Topology\RemoteMonitor.Services.Topology.Shared\RemoteMonitor.Services.Topology.Shared.csproj" />
+  </ItemGroup>
+
+
+</Project>

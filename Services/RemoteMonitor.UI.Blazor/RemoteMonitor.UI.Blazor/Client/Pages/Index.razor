@@ -1,0 +1,281 @@
+﻿@page "/"
+
+@using RemoteMonitor.UI.Models
+@inject HttpClient Http
+
+@if (visualState == "main")
+{
+    <div class="row">
+        <div class="input-group mb-3">
+            <label class="input-group-text" for="inputGroupSelect01">Device</label>
+            <select class="form-select" id="inputGroupSelect01" @onchange="SelectedDeviceChanged">
+                @foreach (var device in devices)
+                {
+                    <option value="@device.DeviceId">@device.Name</option>
+                }
+            </select>
+                <button type="button" class="btn btn-outline-secondary" @onclick="DisplayAddDevice">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                    </svg>
+                </button>
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#"  @onclick="DisplayDeviceConfiguration">Edit</a></li>
+                <li><a class="dropdown-item" href="#"  @onclick="HandleDeviceDeleteSubmit">Delete</a></li>
+                </ul>
+            </div>
+        </div>
+    <div style="padding-top: 1px;" class="row">
+        @if (isLoading)
+        {
+            <div class="spinner-grow" role="status"></div>
+        }
+    </div>
+    @if (currentMeasurement != null)
+    {
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">Current<span style="font-size: 18px; float: right">@currentMeasurement.ConnectionStatus</span></div>
+                    <div class="card-body">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col">
+                                    <span style="font-size: 45px;">@currentMeasurement.Temperature</span>
+                                    <span style="font-size: 16px;font-weight: bold; vertical-align: top;">O</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    Max Tempurature: <span style="font-size: 20px;">@currentMeasurement.MaxTemperature</span>
+                                </div>
+                                <div class="col">
+                                    Min Tempurature: <span style="font-size: 20px;">@currentMeasurement.MinTemperature</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    Humidity: <span class="card-text" style="font-size: 20px;">@currentMeasurement.Humidity</span>
+                                </div>
+                                <div class="col">
+                                    Pressure: <span style="font-size: 20px;">@currentMeasurement.Pressure</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (currentMeasurement.HistoricalMeasurements != null)
+        {
+            <div style="padding-top: 25px;" class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">Temperature</div>
+                        <div class="card-body">
+                            <RadzenChart>
+                                <RadzenLineSeries Smooth="@smooth" Data="@currentMeasurement.HistoricalMeasurements" CategoryProperty="timestamp" LineType="LineType.Solid" ValueProperty="temperatureF" Title="F">
+                                    <RadzenMarkers MarkerType="MarkerType.Circle" />
+                                </RadzenLineSeries>
+                            </RadzenChart>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding-top: 25px;" class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">Humidity</div>
+                        <div class="card-body">
+                            <RadzenChart>
+                                <RadzenLineSeries Smooth="@smooth" Data="@currentMeasurement.HistoricalMeasurements" CategoryProperty="timestamp" LineType="LineType.Solid" ValueProperty="humidity" Title="%">
+                                    <RadzenMarkers MarkerType="MarkerType.Circle" />
+                                </RadzenLineSeries>
+                            </RadzenChart>
+                        </div>
+                     </div>
+                 </div>
+             </div>
+
+             <div style="padding-top: 25px;" class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">Historical</div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Temperature</th>
+                                        <th scope="col">Pressure</th>
+                                        <th scope="col">Humidity</th>
+                                        <th scope="col">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (currentMeasurement.HistoricalMeasurements != null)
+                                    {
+                                        @foreach (var currentMeasurement in currentMeasurement.HistoricalMeasurements)
+                                        {
+                                            <tr>
+                                                <td data-bind="text: temperatureDescription">@currentMeasurement.temperatureDescription</td>
+                                                <td data-bind="text: pressure">@currentMeasurement.pressure</td>
+                                                <td data-bind="text: humidity">@currentMeasurement.humidity</td>
+                                                <td data-bind="text: timestamp">@currentMeasurement.timestamp</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                     </div>
+                 </div>
+             </div>
+        }
+    }
+}
+
+@if (visualState == "add-device")
+{
+    <div class="row">
+        <div class="col">
+            <EditForm Model="@addDeviceCommand" OnValidSubmit="HandleDeviceAddSubmit">
+                <div class="form-group">
+                    <h3>Add Device</h3>
+                </div>
+                <div class="form-row">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                </div>
+                <div class="form-group">
+                    <label for="deviceIdInput">Device ID</label>
+                    <InputText id="deviceIdInput" class="form-control" @bind-Value="addDeviceCommand.Id" />
+                </div>
+                <div class="form-group">
+                    <label for="deviceNameInput">Name</label>
+                    <InputText id="deviceNameInput" class="form-control" @bind-Value="addDeviceCommand.Name" />
+                </div>
+
+                <button @onclick="DisplayMain">Cancel</button>
+                <button class="btn btn-primary">Register</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (visualState == "device-configuration")
+{
+    <div class="row">
+        <div class="col">
+            <EditForm Model="@updateDeviceConfigurationCommand" OnValidSubmit="HandleDeviceConfigurationSubmit">
+                <div class="form-group">
+                    <h3>Configure Device</h3>
+                </div>
+                <div class="form-row">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                </div>
+                <div class="form-group">
+                    <label for="deviceNameInput">Name</label>
+                    <InputText id="deviceNameInput" class="form-control" @bind-Value="updateDeviceConfigurationCommand.Name" />
+                </div>
+                <div class="form-group">
+                    <label for="deviceTemperatureOffsetInput">Temperature Offset</label>
+                    <InputText id="deviceTemperatureOffsetInput" class="form-control" @bind-Value="updateDeviceConfigurationCommand.TemperatureOffset" />
+                </div>
+                <div class="form-group">
+                    <label for="deviceHumidityOffsetInput">Humidity Offset</label>
+                    <InputText id="deviceHumidityOffsetInput" class="form-control" @bind-Value="updateDeviceConfigurationCommand.HumidityOffset" />
+                </div>
+                <button @onclick="DisplayMain">Cancel</button>
+                <button class="btn btn-primary">Submit</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code
+{
+    private List<DeviceSummary> devices = new List<DeviceSummary>();
+    private DeviceMeasurementsViewModel? currentMeasurement;
+
+    private UpdateDeviceConfigurationCommand? updateDeviceConfigurationCommand;
+    private AddDeviceCommand addDeviceCommand = new AddDeviceCommand();
+
+    private string? selectedDeviceId = null;
+    private string visualState = "main";
+    private bool isLoading = false;
+    private bool smooth = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        await LoadDevices();
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task SelectedDeviceChanged(ChangeEventArgs e)
+    {
+        var device = devices.Single(x => x.Name == e.Value.ToString());
+        
+        isLoading = true;
+        currentMeasurement = await Http.GetFromJsonAsync<DeviceMeasurementsViewModel>($"Measurements/{device.Id}");
+        selectedDeviceId = device.Id;
+        isLoading = false;
+    }
+
+    private void DisplayAddDevice()
+    {
+        visualState = "add-device";
+    }
+
+    private async Task DisplayDeviceConfiguration()
+    {
+        var device = await Http.GetFromJsonAsync<Device>($"Device/{selectedDeviceId}");
+
+        updateDeviceConfigurationCommand = new UpdateDeviceConfigurationCommand() { Id = device.Id, Name = device.Name, TemperatureOffset = device.TemperatureOffset.ToString(), HumidityOffset = device.HumidityOffset.ToString() };
+        visualState = "device-configuration";
+    }
+
+    private void DisplayMain()
+    {
+        visualState = "main";
+    }
+
+    private async Task HandleDeviceAddSubmit()
+    {
+        //var d
+        var device = await Http.PostAsJsonAsync<AddDeviceCommand>($"Device", addDeviceCommand);
+        visualState = "main";
+    }
+
+    private async Task HandleDeviceConfigurationSubmit()
+    {
+        var device = await Http.PostAsJsonAsync<UpdateDeviceConfigurationCommand>($"Device/Configuration", updateDeviceConfigurationCommand);
+        visualState = "main";
+    }
+
+    private async Task HandleDeviceDeleteSubmit()
+    {
+        await Http.DeleteAsync($"Device/{selectedDeviceId}");
+        await LoadDevices();
+    }
+
+    private async Task LoadDevices()
+    {
+        devices = await Http.GetFromJsonAsync<List<DeviceSummary>>("Device");
+        if (devices != null && devices.Any())
+        {
+            var device = devices.First();
+            selectedDeviceId = device.Id;
+            currentMeasurement = await Http.GetFromJsonAsync<DeviceMeasurementsViewModel>($"Measurements/{device.Id}");
+        }
+    }
+}

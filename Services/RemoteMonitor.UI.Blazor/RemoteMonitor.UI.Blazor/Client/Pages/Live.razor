@@ -1,0 +1,92 @@
+﻿@page "/live"
+@using Microsoft.AspNetCore.SignalR.Client
+@using RemoteMonitor.UI.Models
+@using System.Text.Json
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+    <h2>Live Stream</h2>
+    <div style="padding-top: 25px;" class="row">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">DeviceId</th>
+                    <th scope="col">Temperature</th>
+                    <th scope="col">Pressure</th>
+                    <th scope="col">Humidity</th>
+                    <th scope="col">MovementCount</th>
+                    <th scope="col">Timestamp</th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: measurements()">
+
+                @foreach (var measurement in Measurements)
+                {
+                    var deviceName = "Unknown";
+                    if (devicesById.ContainsKey(measurement.DeviceId))
+                    {
+                        deviceName = devicesById[measurement.DeviceId].Name;
+                    }
+     
+                    <tr>
+                    <td>@measurement.DeviceId <span class="badge bg-light text-dark">@deviceName </span></td>
+                        <td>@measurement.Temperature</td>
+                        <td>@measurement.Pressure</td>
+                        <td>@measurement.Humidity</td>
+                        <td>@measurement.movementCount</td>
+                        <td>@measurement.Timestamp</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="row">
+            <ul id="messagesList">
+                @foreach (var message in messages)
+                {
+                    <li>@message</li>
+                }
+            </ul>
+        </div>
+    </div>
+
+@code
+{
+    private HubConnection hubConnection;
+    private List<MeasurementNotificationViewModel> Measurements = new List<MeasurementNotificationViewModel>();
+    private List<string> messages = new List<string>();
+    private Dictionary<string, DeviceSummary> devicesById = new Dictionary<string, DeviceSummary>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var devices = await Http.GetFromJsonAsync<List<DeviceSummary>>("Device");
+        devicesById = devices.ToDictionary(x => x.Id);
+
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/measurements"))
+            .Build();
+
+        hubConnection.On<System.Text.Json.JsonElement>("measurement", (message) =>
+        {
+            var json = message.ToString();
+            Console.WriteLine(json);
+            var vm = JsonSerializer.Deserialize<MeasurementNotificationViewModel>(json);
+            Measurements.Add(vm);
+            Measurements = Measurements.OrderBy(x => x.Timestamp).ToList();
+            StateHasChanged();
+
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+
+    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
+
+    public void Dispose()
+    {
+        _ = hubConnection.DisposeAsync();
+    }
+}
