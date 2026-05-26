@@ -8,10 +8,10 @@
     <div class="row">
         <div class="input-group mb-3">
             <label class="input-group-text" for="inputGroupSelect01">Device</label>
-            <select class="form-select" id="inputGroupSelect01" @onchange="SelectedDeviceChanged">
+            <select class="form-select" id="inputGroupSelect01" value="@selectedDeviceId" @onchange="SelectedDeviceChanged">
                 @foreach (var device in devices)
                 {
-                    <option value="@device.DeviceId">@device.Name</option>
+                    <option value="@device.Id">@device.Name</option>
                 }
             </select>
                 <button type="button" class="btn btn-outline-secondary" @onclick="DisplayAddDevice">
@@ -202,7 +202,7 @@
     private List<DeviceSummary> devices = new List<DeviceSummary>();
     private DeviceMeasurementsViewModel? currentMeasurement;
 
-    private UpdateDeviceConfigurationCommand? updateDeviceConfigurationCommand;
+    private UpdateDeviceConfigurationCommand updateDeviceConfigurationCommand = new UpdateDeviceConfigurationCommand();
     private AddDeviceCommand addDeviceCommand = new AddDeviceCommand();
 
     private string? selectedDeviceId = null;
@@ -223,12 +223,14 @@
 
     private async Task SelectedDeviceChanged(ChangeEventArgs e)
     {
-        var device = devices.Single(x => x.Name == e.Value.ToString());
-        
-        isLoading = true;
-        currentMeasurement = await Http.GetFromJsonAsync<DeviceMeasurementsViewModel>($"Measurements/{device.Id}");
-        selectedDeviceId = device.Id;
-        isLoading = false;
+        var deviceId = e.Value?.ToString();
+
+        if (string.IsNullOrWhiteSpace(deviceId))
+        {
+            return;
+        }
+
+        await LoadDeviceMeasurements(deviceId);
     }
 
     private void DisplayAddDevice()
@@ -239,6 +241,11 @@
     private async Task DisplayDeviceConfiguration()
     {
         var device = await Http.GetFromJsonAsync<Device>($"Device/{selectedDeviceId}");
+
+        if (device == null)
+        {
+            return;
+        }
 
         updateDeviceConfigurationCommand = new UpdateDeviceConfigurationCommand() { Id = device.Id, Name = device.Name, TemperatureOffset = device.TemperatureOffset.ToString(), HumidityOffset = device.HumidityOffset.ToString() };
         visualState = "device-configuration";
@@ -270,12 +277,29 @@
 
     private async Task LoadDevices()
     {
-        devices = await Http.GetFromJsonAsync<List<DeviceSummary>>("Device");
+        devices = await Http.GetFromJsonAsync<List<DeviceSummary>>("Device") ?? new List<DeviceSummary>();
         if (devices != null && devices.Any())
         {
-            var device = devices.First();
-            selectedDeviceId = device.Id;
-            currentMeasurement = await Http.GetFromJsonAsync<DeviceMeasurementsViewModel>($"Measurements/{device.Id}");
+            await LoadDeviceMeasurements(devices.First().Id);
+        }
+        else
+        {
+            selectedDeviceId = null;
+            currentMeasurement = null;
+        }
+    }
+
+    private async Task LoadDeviceMeasurements(string deviceId)
+    {
+        isLoading = true;
+        try
+        {
+            selectedDeviceId = deviceId;
+            currentMeasurement = await Http.GetFromJsonAsync<DeviceMeasurementsViewModel>($"Measurements/{deviceId}");
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 }
