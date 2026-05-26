@@ -1,0 +1,110 @@
+@host = https://localhost:7265
+@deviceId = sample-device-001
+@timestamp = 2026-05-26T12:00:00Z
+
+### API status
+GET {{host}}/status
+Accept: application/json
+
+### Measurements status
+GET {{host}}/Measurements/Status
+Accept: application/json
+
+### List devices
+GET {{host}}/api/device
+Accept: application/json
+
+### Get device by id
+GET {{host}}/api/device/{{deviceId}}
+Accept: application/json
+
+### Add device
+POST {{host}}/api/device
+Content-Type: application/json
+
+{
+  "id": "{{deviceId}}",
+  "name": "Sample Device"
+}
+
+### Update device configuration
+POST {{host}}/api/device/configuration
+Content-Type: application/json
+
+{
+  "id": "{{deviceId}}",
+  "name": "Sample Device",
+  "temperatureOffset": "0",
+  "humidityOffset": "0"
+}
+
+### Delete device
+DELETE {{host}}/api/device/{{deviceId}}
+
+### Get device measurements view model
+GET {{host}}/api/measurements/{{deviceId}}
+Accept: application/json
+
+### Get raw measurements by device id
+GET {{host}}/Measurements/{{deviceId}}
+Accept: application/json
+
+### Add measurements
+POST {{host}}/Measurements
+Content-Type: application/json
+
+[
+  {
+    "deviceId": "{{deviceId}}",
+    "measurementType": "snapshot",
+    "temperature": 22.5,
+    "humidity": 45.1,
+    "pressure": 1012.8,
+    "movementCount": 7,
+    "timestamp": "{{timestamp}}"
+  }
+]
+
+### Get observations by device id
+GET {{host}}/api/observations/{{deviceId}}
+Accept: application/json
+
+### Post Ruuvi gateway payload
+POST {{host}}/api/RuuviMeasurementEndpoint
+Content-Type: application/json
+
+{
+  "data": {
+    "coordinates": "",
+    "timestamp": "1646664285",
+    "nonce": "2648151134",
+    "gw_mac": "F2:BF:09:3D:5A:22",
+    "tags": {
+      "E9:D9:16:1B:0A:EE": {
+        "rssi": -29,
+        "timestamp": "1646664284",
+        "data": "0201061BFF99040511822AC3BCE40008000403EC6136DED5B2E9D9161B0AEE"
+      }
+    }
+  }
+}
+
+### Post cloud telemetry event
+POST {{host}}/telemetry-events
+Content-Type: application/json
+
+{
+  "data": {
+    "coordinates": "",
+    "timestamp": "1646664285",
+    "nonce": "2648151134",
+    "gw_mac": "F2:BF:09:3D:5A:22",
+    "tags": {
+      "E9:D9:16:1B:0A:EE": {
+        "rssi": -29,
+        "timestamp": "1646664284",
+        "data": "0201061BFF99040511822AC3BCE40008000403EC6136DED5B2E9D9161B0AEE"
+      }
+    }
+  }
+}
