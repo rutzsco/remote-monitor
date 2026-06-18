@@ -10,7 +10,7 @@ namespace RemoteMonitor.UI.Models
         public decimal Temperature { get; set; }
         public decimal Pressure { get; set; }
         public decimal Humidity { get; set; }
-        public int? movementCount { get; set; }
+        public int? MovementCount { get; set; }
         public DateTime Timestamp { get; set; }
     }
 }

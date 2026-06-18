@@ -35,7 +35,7 @@
                         <td>@measurement.Temperature</td>
                         <td>@measurement.Pressure</td>
                         <td>@measurement.Humidity</td>
-                        <td>@measurement.movementCount</td>
+                        <td>@measurement.MovementCount</td>
                         <td>@measurement.Timestamp</td>
                     </tr>
                 }
@@ -53,14 +53,15 @@
 
 @code
 {
-    private HubConnection hubConnection;
+    private HubConnection? hubConnection;
     private List<MeasurementNotificationViewModel> Measurements = new List<MeasurementNotificationViewModel>();
     private List<string> messages = new List<string>();
     private Dictionary<string, DeviceSummary> devicesById = new Dictionary<string, DeviceSummary>();
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     protected override async Task OnInitializedAsync()
     {
-        var devices = await Http.GetFromJsonAsync<List<DeviceSummary>>("Device");
+        var devices = await Http.GetFromJsonAsync<List<DeviceSummary>>("Device") ?? new List<DeviceSummary>();
         devicesById = devices.ToDictionary(x => x.Id);
 
 
@@ -72,10 +73,15 @@
         {
             var json = message.ToString();
             Console.WriteLine(json);
-            var vm = JsonSerializer.Deserialize<MeasurementNotificationViewModel>(json);
+            var vm = JsonSerializer.Deserialize<MeasurementNotificationViewModel>(json, JsonOptions);
+            if (vm == null || string.IsNullOrWhiteSpace(vm.DeviceId))
+            {
+                return;
+            }
+
             Measurements.Add(vm);
-            Measurements = Measurements.OrderBy(x => x.Timestamp).ToList();
-            StateHasChanged();
+            Measurements = Measurements.OrderByDescending(x => x.Timestamp).ToList();
+            _ = InvokeAsync(StateHasChanged);
 
         });
 
@@ -83,10 +89,13 @@
     }
 
 
-    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
+    public bool IsConnected => hubConnection?.State == HubConnectionState.Connected;
 
     public void Dispose()
     {
-        _ = hubConnection.DisposeAsync();
+        if (hubConnection != null)
+        {
+            _ = hubConnection.DisposeAsync();
+        }
     }
 }

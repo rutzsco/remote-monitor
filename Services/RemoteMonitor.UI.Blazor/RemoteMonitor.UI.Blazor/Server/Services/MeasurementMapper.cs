@@ -32,7 +32,7 @@ namespace RemoteMonitor.UI.Blazor.Server.Services
                 Temperature = measurement.Temperature,
                 Pressure = measurement.Pressure,
                 Humidity = measurement.Humidity,
-                movementCount = measurement.MovementCount,
+                MovementCount = measurement.MovementCount,
                 Timestamp = measurement.Timestamp
             };
         }
